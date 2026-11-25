@@ -49,7 +49,11 @@ cat > "${APP_DIR}/Contents/Info.plist" << 'PLIST'
 PLIST
 
 echo ""
-echo "Done! Double-click to run:"
-echo "  $(pwd)/${APP_DIR}"
+echo "Done! Launching ${APP_NAME}..."
+echo "App location: $(pwd)/${APP_DIR}"
+echo "(Drag it to your Applications folder to keep it.)"
 echo ""
-echo "Or drag it to your Applications folder."
+
+# Launch it. Because it was just compiled locally (not downloaded),
+# it has no quarantine flag, so it opens with no Gatekeeper prompt.
+open "${APP_DIR}"
