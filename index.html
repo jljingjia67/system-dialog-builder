@@ -1,0 +1,1333 @@
+<title>System Dialog Builder</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<style>
+:root {
+  --dialog-bg: rgba(246, 246, 246, 0.92);
+  --dialog-shadow: 0 10px 40px rgba(0,0,0,0.18), 0 2px 12px rgba(0,0,0,0.08);
+  --dialog-border: rgba(0,0,0,0.08);
+  --title-color: #1d1d1f;
+  --desc-color: #6e6e73;
+  --input-bg: rgba(255,255,255,0.85);
+  --input-border: rgba(0,0,0,0.12);
+  --input-text: #1d1d1f;
+  --input-placeholder: #8e8e93;
+  --divider: rgba(0,0,0,0.12);
+  --btn-text: #007aff;
+  --btn-cancel-text: #007aff;
+  --btn-hover: rgba(0,0,0,0.04);
+  --backdrop-color: rgba(50,50,50,0.4);
+  --panel-bg: #ffffff;
+  --panel-text: #1d1d1f;
+  --panel-muted: #6e6e73;
+  --panel-border: #e5e5ea;
+  --panel-input-bg: #f5f5f7;
+  --panel-input-border: #d2d2d7;
+  --panel-section-bg: #f9f9fb;
+  --icon-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  --warning-tint: #ff9f0a;
+  --error-tint: #ff3b30;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --dialog-bg: rgba(44, 44, 46, 0.92);
+    --dialog-shadow: 0 10px 40px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);
+    --dialog-border: rgba(255,255,255,0.08);
+    --title-color: #f5f5f7;
+    --desc-color: #98989d;
+    --input-bg: rgba(30,30,32,0.8);
+    --input-border: rgba(255,255,255,0.12);
+    --input-text: #f5f5f7;
+    --input-placeholder: #636366;
+    --divider: rgba(255,255,255,0.12);
+    --btn-text: #0a84ff;
+    --btn-cancel-text: #0a84ff;
+    --btn-hover: rgba(255,255,255,0.06);
+    --backdrop-color: rgba(0,0,0,0.55);
+    --panel-bg: #1c1c1e;
+    --panel-text: #f5f5f7;
+    --panel-muted: #98989d;
+    --panel-border: #38383a;
+    --panel-input-bg: #2c2c2e;
+    --panel-input-border: #48484a;
+    --panel-section-bg: #242426;
+    --icon-shadow: 0 2px 8px rgba(0,0,0,0.35);
+    color-scheme: dark;
+  }
+}
+
+:root[data-theme="dark"] {
+  --dialog-bg: rgba(44, 44, 46, 0.92);
+  --dialog-shadow: 0 10px 40px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);
+  --dialog-border: rgba(255,255,255,0.08);
+  --title-color: #f5f5f7;
+  --desc-color: #98989d;
+  --input-bg: rgba(30,30,32,0.8);
+  --input-border: rgba(255,255,255,0.12);
+  --input-text: #f5f5f7;
+  --input-placeholder: #636366;
+  --divider: rgba(255,255,255,0.12);
+  --btn-text: #0a84ff;
+  --btn-cancel-text: #0a84ff;
+  --btn-hover: rgba(255,255,255,0.06);
+  --backdrop-color: rgba(0,0,0,0.55);
+  --panel-bg: #1c1c1e;
+  --panel-text: #f5f5f7;
+  --panel-muted: #98989d;
+  --panel-border: #38383a;
+  --panel-input-bg: #2c2c2e;
+  --panel-input-border: #48484a;
+  --panel-section-bg: #242426;
+  --icon-shadow: 0 2px 8px rgba(0,0,0,0.35);
+  color-scheme: dark;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'SF Pro Display', system-ui, 'Helvetica Neue', sans-serif;
+  background: var(--panel-bg);
+  color: var(--panel-text);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 0;
+}
+
+/* ---- Preview area ---- */
+.preview-area {
+  position: relative;
+  width: calc(100% + 2 * max(16px, env(safe-area-inset-left, 0px)));
+  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
+  min-height: 440px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.preview-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    linear-gradient(135deg, #a8c0ff 0%, #3f2b96 50%, #667eea 100%);
+  background-size: 200% 200%;
+  animation: bgShift 12s ease infinite;
+}
+
+@keyframes bgShift {
+  0%,100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+
+.preview-area::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--backdrop-color);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 1;
+}
+
+/* ---- The dialog ---- */
+.dialog {
+  position: relative;
+  width: 270px;
+  background: var(--dialog-bg);
+  backdrop-filter: blur(72px) saturate(210%);
+  -webkit-backdrop-filter: blur(72px) saturate(210%);
+  border-radius: 14px;
+  box-shadow: var(--dialog-shadow);
+  border: 0.5px solid var(--dialog-border);
+  overflow: hidden;
+  z-index: 2;
+  transition: transform 0.18s ease, opacity 0.18s ease;
+}
+
+.dialog-body {
+  padding: 20px 16px 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.dialog-icon {
+  width: 56px;
+  height: 56px;
+  border-radius: 13px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+  background: linear-gradient(180deg, #58b0f8 0%, #1a8dfc 100%);
+  box-shadow: var(--icon-shadow);
+  color: #fff;
+  position: relative;
+  flex-shrink: 0;
+  transition: background 0.25s ease;
+}
+
+.dialog-icon.warning {
+  background: linear-gradient(180deg, #ffcb57 0%, var(--warning-tint) 100%);
+}
+
+.dialog-icon.error {
+  background: linear-gradient(180deg, #ff7272 0%, var(--error-tint) 100%);
+}
+
+.dialog-icon svg {
+  width: 30px;
+  height: 30px;
+  fill: #fff;
+}
+
+.dialog-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--title-color);
+  text-align: center;
+  margin-bottom: 4px;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+.dialog-desc {
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--desc-color);
+  text-align: center;
+  line-height: 1.4;
+  margin-bottom: 14px;
+  max-width: 234px;
+  word-wrap: break-word;
+  white-space: pre-wrap;
+}
+
+.dialog-fields {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dialog-input {
+  width: 100%;
+  height: 24px;
+  border-radius: 5px;
+  border: 0.5px solid var(--input-border);
+  background: var(--input-bg);
+  padding: 0 7px;
+  font-size: 12px;
+  font-family: inherit;
+  color: var(--input-text);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dialog-input::placeholder {
+  color: var(--input-placeholder);
+}
+
+.dialog-input:focus {
+  border-color: #007aff;
+  box-shadow: 0 0 0 2.5px rgba(0,122,255,0.25);
+}
+
+.dialog-buttons {
+  display: flex;
+  width: 100%;
+  border-top: 0.5px solid var(--divider);
+}
+
+.dialog-btn {
+  flex: 1;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 17px;
+  font-family: inherit;
+  letter-spacing: -0.01em;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--btn-cancel-text);
+  font-weight: 400;
+  transition: background 0.1s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.dialog-btn:hover {
+  background: var(--btn-hover);
+}
+
+.dialog-btn:active {
+  background: rgba(0,122,255,0.08);
+}
+
+.dialog-btn.primary {
+  font-weight: 600;
+  color: var(--btn-text);
+}
+
+.dialog-btn-divider {
+  width: 0.5px;
+  background: var(--divider);
+  align-self: stretch;
+  flex-shrink: 0;
+}
+
+/* ---- Customization panel ---- */
+.panel {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px 0 56px;
+}
+
+.panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.panel-title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--panel-text);
+  letter-spacing: -0.02em;
+}
+
+.theme-toggle {
+  display: flex;
+  background: var(--panel-input-bg);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid var(--panel-input-border);
+}
+
+.theme-btn {
+  padding: 6px 14px;
+  font-size: 12px;
+  font-family: inherit;
+  font-weight: 500;
+  border: none;
+  background: none;
+  cursor: pointer;
+  color: var(--panel-muted);
+  transition: all 0.15s ease;
+}
+
+.theme-btn.active {
+  background: var(--btn-text);
+  color: #fff;
+}
+
+.section {
+  background: var(--panel-section-bg);
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  padding: 16px;
+  margin-bottom: 12px;
+}
+
+.section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--panel-muted);
+  margin-bottom: 12px;
+}
+
+.field {
+  margin-bottom: 12px;
+}
+
+.field:last-child {
+  margin-bottom: 0;
+}
+
+.field-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--panel-text);
+  margin-bottom: 5px;
+}
+
+.field-input, .field-textarea, .field-select {
+  width: 100%;
+  padding: 8px 10px;
+  font-size: 13px;
+  font-family: inherit;
+  border-radius: 8px;
+  border: 1px solid var(--panel-input-border);
+  background: var(--panel-input-bg);
+  color: var(--panel-text);
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.field-input:focus, .field-textarea:focus, .field-select:focus {
+  border-color: var(--btn-text);
+  box-shadow: 0 0 0 2px rgba(0,122,255,0.15);
+}
+
+.field-textarea {
+  resize: vertical;
+  min-height: 60px;
+  line-height: 1.4;
+}
+
+.field-select {
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238e8e93'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px;
+  cursor: pointer;
+}
+
+.icon-picker {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.icon-option {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border: 2px solid transparent;
+  background: var(--panel-input-bg);
+  transition: all 0.15s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.icon-option:hover {
+  border-color: var(--panel-input-border);
+}
+
+.icon-option.selected {
+  border-color: var(--btn-text);
+  background: rgba(0,122,255,0.08);
+}
+
+.icon-option svg {
+  width: 22px;
+  height: 22px;
+  fill: var(--panel-text);
+}
+
+.style-picker {
+  display: flex;
+  gap: 8px;
+}
+
+.style-option {
+  flex: 1;
+  padding: 10px 8px;
+  border-radius: 8px;
+  text-align: center;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  border: 2px solid transparent;
+  background: var(--panel-input-bg);
+  color: var(--panel-text);
+  transition: all 0.15s ease;
+}
+
+.style-option:hover {
+  border-color: var(--panel-input-border);
+}
+
+.style-option.selected {
+  border-color: var(--btn-text);
+  background: rgba(0,122,255,0.08);
+}
+
+.row {
+  display: flex;
+  gap: 10px;
+}
+
+.row > .field {
+  flex: 1;
+  min-width: 0;
+}
+
+.toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.toggle-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--panel-text);
+}
+
+.toggle-switch {
+  position: relative;
+  width: 44px;
+  height: 26px;
+  cursor: pointer;
+  display: inline-block;
+}
+
+.toggle-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.toggle-slider {
+  position: absolute;
+  inset: 0;
+  background: var(--panel-input-border);
+  border-radius: 13px;
+  transition: background 0.2s ease;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #fff;
+  top: 2px;
+  left: 2px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+  transition: transform 0.2s ease;
+}
+
+.toggle-switch input:checked + .toggle-slider {
+  background: #34c759;
+}
+
+.toggle-switch input:checked + .toggle-slider::before {
+  transform: translateX(18px);
+}
+
+@media (max-width: 480px) {
+  .row {
+    flex-direction: column;
+    gap: 0;
+  }
+  .row > .field {
+    margin-bottom: 12px;
+  }
+  .row > .field:last-child {
+    margin-bottom: 0;
+  }
+}
+
+/* ---- Action buttons ---- */
+.action-buttons {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.btn-save {
+  flex: 1;
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  border-radius: 10px;
+  background: #007aff;
+  color: #fff;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.btn-save:hover {
+  background: #0071e3;
+}
+
+.btn-save:active {
+  background: #0064cc;
+  transform: scale(0.98);
+}
+
+.btn-export {
+  padding: 12px 20px;
+  font-size: 15px;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid var(--panel-input-border);
+  border-radius: 10px;
+  background: var(--panel-input-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.1s ease;
+  -webkit-user-select: none;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.btn-export:hover {
+  background: var(--panel-section-bg);
+}
+
+.btn-export:active {
+  transform: scale(0.98);
+}
+
+/* ---- Saved configurations ---- */
+.saved-configs {
+  background: var(--panel-section-bg);
+  border-radius: 12px;
+  border: 1px solid var(--panel-border);
+  margin-bottom: 12px;
+  overflow: hidden;
+}
+
+.saved-configs-header {
+  padding: 16px 16px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--panel-muted);
+}
+
+.saved-configs-empty {
+  padding: 0 16px 16px;
+  font-size: 13px;
+  color: var(--panel-muted);
+  font-style: italic;
+}
+
+.saved-config-item {
+  display: flex;
+  align-items: center;
+  padding: 10px 16px;
+  border-top: 0.5px solid var(--panel-border);
+  gap: 10px;
+  transition: background 0.1s ease;
+}
+
+.saved-config-item:first-child {
+  border-top: 0.5px solid var(--panel-border);
+}
+
+.saved-config-chip {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: #fff;
+  background: linear-gradient(180deg, #58b0f8 0%, #1a8dfc 100%);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.12);
+}
+
+.saved-config-chip.warning {
+  background: linear-gradient(180deg, #ffcb57 0%, #ff9f0a 100%);
+}
+
+.saved-config-chip.error {
+  background: linear-gradient(180deg, #ff7272 0%, #ff3b30 100%);
+}
+
+.saved-config-chip svg {
+  width: 16px;
+  height: 16px;
+  fill: #fff;
+}
+
+.saved-config-info {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.saved-config-title {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--panel-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-config-time {
+  font-size: 11px;
+  color: var(--panel-muted);
+  margin-top: 1px;
+}
+
+.saved-config-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.btn-preview-config {
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: inherit;
+  border: 1px solid var(--panel-input-border);
+  border-radius: 6px;
+  background: var(--panel-input-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.btn-preview-config:hover {
+  background: rgba(0,122,255,0.08);
+}
+
+.btn-delete-config {
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
+  border: none;
+  background: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--panel-muted);
+  transition: background 0.1s ease, color 0.1s ease;
+  font-size: 14px;
+  line-height: 1;
+}
+
+.btn-delete-config:hover {
+  background: rgba(255,59,48,0.1);
+  color: #ff3b30;
+}
+
+/* ---- Preview modal ---- */
+.preview-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  visibility: hidden;
+  transition: opacity 0.2s ease, visibility 0.2s ease;
+}
+
+.preview-modal-overlay.visible {
+  opacity: 1;
+  visibility: visible;
+}
+
+.preview-modal-bg {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+.preview-modal-content {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.preview-modal-close {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: none;
+  background: rgba(255,255,255,0.15);
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s ease;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.preview-modal-close:hover {
+  background: rgba(255,255,255,0.25);
+}
+
+/* ---- Toast ---- */
+.toast {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  padding: 10px 20px;
+  border-radius: 10px;
+  background: rgba(30,30,30,0.9);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 2000;
+  opacity: 0;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  pointer-events: none;
+}
+
+.toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+</style>
+
+<!-- Preview area -->
+<div class="preview-area">
+  <div class="preview-bg"></div>
+  <div class="dialog" id="dialog">
+    <div class="dialog-body">
+      <div class="dialog-icon" id="dialogIcon">
+        <svg id="iconSvg" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="dialog-title" id="dialogTitle">Sign In</div>
+      <div class="dialog-desc" id="dialogDesc">Enter the password for the account "user@example.com".</div>
+      <div class="dialog-fields" id="dialogFields"></div>
+    </div>
+    <div class="dialog-buttons">
+      <button class="dialog-btn" id="btnCancel">Cancel</button>
+      <div class="dialog-btn-divider"></div>
+      <button class="dialog-btn primary" id="btnOk">OK</button>
+    </div>
+  </div>
+</div>
+
+<!-- Customization panel -->
+<div class="panel">
+  <div class="panel-header">
+    <div class="panel-title">Customize Dialog</div>
+    <div class="theme-toggle">
+      <button class="theme-btn active" data-theme="auto">Auto</button>
+      <button class="theme-btn" data-theme="light">Light</button>
+      <button class="theme-btn" data-theme="dark">Dark</button>
+    </div>
+  </div>
+
+  <!-- Alert style -->
+  <div class="section">
+    <div class="section-title">Alert Style</div>
+    <div class="style-picker" id="stylePicker">
+      <div class="style-option selected" data-style="standard">Standard</div>
+      <div class="style-option" data-style="warning">Warning</div>
+      <div class="style-option" data-style="error">Error</div>
+    </div>
+  </div>
+
+  <!-- Icon -->
+  <div class="section">
+    <div class="section-title">Icon</div>
+    <div class="icon-picker" id="iconPicker">
+      <div class="icon-option selected" data-icon="lock" title="Lock">
+        <svg viewBox="0 0 24 24"><path d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 5c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7zm4 9a1 1 0 1 1-2 0v-3a1 1 0 1 1 2 0v3z"/></svg>
+      </div>
+      <div class="icon-option" data-icon="key" title="Key">
+        <svg viewBox="0 0 24 24"><path d="M12.65 10a6 6 0 1 0-1.3 2H15v2h2v-2h1.5v-2h-5.85zM7 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/></svg>
+      </div>
+      <div class="icon-option" data-icon="gear" title="Gear">
+        <svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.48.48 0 0 0 13.93 2h-3.86c-.24 0-.44.17-.48.4l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.71 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.04.3-.06.63-.06.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.03.7 1.62.94l.36 2.54c.04.24.24.4.48.4h3.86c.24 0 .44-.17.48-.4l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/></svg>
+      </div>
+      <div class="icon-option" data-icon="cloud" title="Cloud">
+        <svg viewBox="0 0 24 24"><path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/></svg>
+      </div>
+      <div class="icon-option" data-icon="shield" title="Shield">
+        <svg viewBox="0 0 24 24"><path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/></svg>
+      </div>
+      <div class="icon-option" data-icon="wifi" title="Wi-Fi">
+        <svg viewBox="0 0 24 24"><path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4l2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/></svg>
+      </div>
+      <div class="icon-option" data-icon="person" title="Person">
+        <svg viewBox="0 0 24 24"><path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+      </div>
+      <div class="icon-option" data-icon="bell" title="Bell">
+        <svg viewBox="0 0 24 24"><path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/></svg>
+      </div>
+    </div>
+  </div>
+
+  <!-- Text content -->
+  <div class="section">
+    <div class="section-title">Text Content</div>
+    <div class="field">
+      <label class="field-label" for="cfgTitle">Title</label>
+      <input class="field-input" id="cfgTitle" type="text" value="Sign In">
+    </div>
+    <div class="field">
+      <label class="field-label" for="cfgDesc">Description</label>
+      <textarea class="field-textarea" id="cfgDesc">Enter the password for the account "user@example.com".</textarea>
+    </div>
+  </div>
+
+  <!-- Input fields -->
+  <div class="section">
+    <div class="section-title">Input Fields</div>
+    <div class="field">
+      <div class="toggle-row">
+        <span class="toggle-label">Show second field</span>
+        <label class="toggle-switch">
+          <input type="checkbox" id="cfgTwoFields">
+          <span class="toggle-slider"></span>
+        </label>
+      </div>
+    </div>
+    <div class="row">
+      <div class="field">
+        <label class="field-label" for="cfgField1Placeholder">Field 1 Placeholder</label>
+        <input class="field-input" id="cfgField1Placeholder" type="text" value="Password">
+      </div>
+      <div class="field">
+        <label class="field-label" for="cfgField1Type">Field 1 Type</label>
+        <select class="field-select" id="cfgField1Type">
+          <option value="password" selected>Password</option>
+          <option value="text">Text</option>
+          <option value="email">Email</option>
+        </select>
+      </div>
+    </div>
+    <div class="row" id="field2Row" hidden>
+      <div class="field">
+        <label class="field-label" for="cfgField2Placeholder">Field 2 Placeholder</label>
+        <input class="field-input" id="cfgField2Placeholder" type="text" value="Username">
+      </div>
+      <div class="field">
+        <label class="field-label" for="cfgField2Type">Field 2 Type</label>
+        <select class="field-select" id="cfgField2Type">
+          <option value="text" selected>Text</option>
+          <option value="password">Password</option>
+          <option value="email">Email</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buttons -->
+  <div class="section">
+    <div class="section-title">Buttons</div>
+    <div class="row">
+      <div class="field">
+        <label class="field-label" for="cfgBtnCancel">Cancel Button</label>
+        <input class="field-input" id="cfgBtnCancel" type="text" value="Cancel">
+      </div>
+      <div class="field">
+        <label class="field-label" for="cfgBtnOk">Primary Button</label>
+        <input class="field-input" id="cfgBtnOk" type="text" value="OK">
+      </div>
+    </div>
+  </div>
+
+  <!-- Save & Export buttons -->
+  <div class="action-buttons">
+    <button class="btn-save" id="btnSaveConfig">Save Configuration</button>
+    <button class="btn-export" id="btnExportJson">Export JSON</button>
+  </div>
+
+  <!-- Saved configurations -->
+  <div class="saved-configs" id="savedConfigsPanel">
+    <div class="saved-configs-header">Saved Configurations</div>
+    <div class="saved-configs-empty" id="savedConfigsEmpty">No saved configurations yet.</div>
+    <div id="savedConfigsList"></div>
+  </div>
+</div>
+
+<!-- Preview modal -->
+<div class="preview-modal-overlay" id="previewModal">
+  <div class="preview-modal-bg" id="previewModalBg"></div>
+  <div class="preview-modal-content">
+    <div id="previewDialogContainer"></div>
+    <button class="preview-modal-close" id="previewModalClose">&times;</button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script>
+(function() {
+  'use strict';
+
+  var iconSvgs = {
+    lock: '<path d="M12 2C9.24 2 7 4.24 7 7v3H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8a2 2 0 0 0-2-2h-1V7c0-2.76-2.24-5-5-5zm-3 5c0-1.66 1.34-3 3-3s3 1.34 3 3v3H9V7zm4 9a1 1 0 1 1-2 0v-3a1 1 0 1 1 2 0v3z"/>',
+    key: '<path d="M12.65 10a6 6 0 1 0-1.3 2H15v2h2v-2h1.5v-2h-5.85zM7 12a2 2 0 1 1 0-4 2 2 0 0 1 0 4z"/>',
+    gear: '<path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.06-.94l2.03-1.58a.49.49 0 0 0 .12-.61l-1.92-3.32a.49.49 0 0 0-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54A.48.48 0 0 0 13.93 2h-3.86c-.24 0-.44.17-.48.4l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96a.49.49 0 0 0-.59.22L2.71 8.87a.49.49 0 0 0 .12.61l2.03 1.58c-.04.3-.06.63-.06.94s.02.64.07.94l-2.03 1.58a.49.49 0 0 0-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.37 1.03.7 1.62.94l.36 2.54c.04.24.24.4.48.4h3.86c.24 0 .44-.17.48-.4l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32a.49.49 0 0 0-.12-.61l-2.03-1.58zM12 15.6A3.6 3.6 0 1 1 12 8.4a3.6 3.6 0 0 1 0 7.2z"/>',
+    cloud: '<path d="M19.35 10.04A7.49 7.49 0 0 0 12 4C9.11 4 6.6 5.64 5.35 8.04A5.994 5.994 0 0 0 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z"/>',
+    shield: '<path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>',
+    wifi: '<path d="M1 9l2 2c4.97-4.97 13.03-4.97 18 0l2-2C16.93 2.93 7.08 2.93 1 9zm8 8l3 3 3-3a4.237 4.237 0 0 0-6 0zm-4-4l2 2a7.074 7.074 0 0 1 10 0l2-2C15.14 9.14 8.87 9.14 5 13z"/>',
+    person: '<path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>',
+    bell: '<path d="M12 22c1.1 0 2-.9 2-2h-4a2 2 0 0 0 2 2zm6-6v-5c0-3.07-1.64-5.64-4.5-6.32V4c0-.83-.67-1.5-1.5-1.5s-1.5.67-1.5 1.5v.68C7.63 5.36 6 7.92 6 11v5l-2 2v1h16v-1l-2-2z"/>'
+  };
+
+  var currentIcon = 'lock';
+  var currentStyle = 'standard';
+
+  var dialogIcon = document.getElementById('dialogIcon');
+  var iconSvg = document.getElementById('iconSvg');
+  var dialogTitle = document.getElementById('dialogTitle');
+  var dialogDesc = document.getElementById('dialogDesc');
+  var dialogFields = document.getElementById('dialogFields');
+  var btnCancel = document.getElementById('btnCancel');
+  var btnOk = document.getElementById('btnOk');
+  var dialog = document.getElementById('dialog');
+
+  function escAttr(s) {
+    return s.replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function updateIcon() {
+    iconSvg.innerHTML = iconSvgs[currentIcon] || iconSvgs.lock;
+    dialogIcon.className = 'dialog-icon';
+    if (currentStyle === 'warning') dialogIcon.classList.add('warning');
+    if (currentStyle === 'error') dialogIcon.classList.add('error');
+  }
+
+  function updateFields() {
+    var twoFields = document.getElementById('cfgTwoFields').checked;
+    var f1p = document.getElementById('cfgField1Placeholder').value;
+    var f1t = document.getElementById('cfgField1Type').value;
+    var f2p = document.getElementById('cfgField2Placeholder').value;
+    var f2t = document.getElementById('cfgField2Type').value;
+
+    var html = '';
+    if (twoFields) {
+      html += '<input class="dialog-input" type="' + escAttr(f2t) + '" placeholder="' + escAttr(f2p) + '">';
+    }
+    html += '<input class="dialog-input" type="' + escAttr(f1t) + '" placeholder="' + escAttr(f1p) + '">';
+    dialogFields.innerHTML = html;
+  }
+
+  document.getElementById('cfgTitle').addEventListener('input', function() {
+    dialogTitle.textContent = this.value || 'Title';
+  });
+
+  document.getElementById('cfgDesc').addEventListener('input', function() {
+    dialogDesc.textContent = this.value;
+  });
+
+  document.getElementById('cfgTwoFields').addEventListener('change', function() {
+    document.getElementById('field2Row').hidden = !this.checked;
+    updateFields();
+  });
+
+  ['cfgField1Placeholder', 'cfgField1Type', 'cfgField2Placeholder', 'cfgField2Type'].forEach(function(id) {
+    document.getElementById(id).addEventListener('input', updateFields);
+    document.getElementById(id).addEventListener('change', updateFields);
+  });
+
+  document.getElementById('cfgBtnCancel').addEventListener('input', function() {
+    btnCancel.textContent = this.value || 'Cancel';
+  });
+  document.getElementById('cfgBtnOk').addEventListener('input', function() {
+    btnOk.textContent = this.value || 'OK';
+  });
+
+  document.getElementById('iconPicker').addEventListener('click', function(e) {
+    var opt = e.target.closest('.icon-option');
+    if (!opt) return;
+    this.querySelectorAll('.icon-option').forEach(function(o) { o.classList.remove('selected'); });
+    opt.classList.add('selected');
+    currentIcon = opt.dataset.icon;
+    updateIcon();
+  });
+
+  document.getElementById('stylePicker').addEventListener('click', function(e) {
+    var opt = e.target.closest('.style-option');
+    if (!opt) return;
+    this.querySelectorAll('.style-option').forEach(function(o) { o.classList.remove('selected'); });
+    opt.classList.add('selected');
+    currentStyle = opt.dataset.style;
+    updateIcon();
+  });
+
+  document.querySelectorAll('.theme-btn').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      document.querySelectorAll('.theme-btn').forEach(function(b) { b.classList.remove('active'); });
+      this.classList.add('active');
+      var theme = this.dataset.theme;
+      if (theme === 'auto') {
+        document.documentElement.removeAttribute('data-theme');
+      } else {
+        document.documentElement.setAttribute('data-theme', theme);
+      }
+    });
+  });
+
+  function flashDialog() {
+    dialog.style.transform = 'scale(0.96)';
+    dialog.style.opacity = '0.6';
+    setTimeout(function() {
+      dialog.style.transform = '';
+      dialog.style.opacity = '';
+    }, 180);
+  }
+
+  btnCancel.addEventListener('click', flashDialog);
+  btnOk.addEventListener('click', flashDialog);
+
+  updateIcon();
+  updateFields();
+
+  /* ---- Save & Preview feature ---- */
+  var savedConfigs = [];
+  var toastTimer = null;
+
+  function showToast(msg) {
+    var toast = document.getElementById('toast');
+    toast.textContent = msg;
+    toast.classList.add('visible');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function() {
+      toast.classList.remove('visible');
+    }, 2000);
+  }
+
+  function getCurrentConfig() {
+    var activeThemeBtn = document.querySelector('.theme-btn.active');
+    return {
+      id: Date.now() + '-' + Math.random().toString(36).substr(2, 6),
+      timestamp: new Date().toLocaleString(),
+      icon: currentIcon,
+      style: currentStyle,
+      title: document.getElementById('cfgTitle').value,
+      description: document.getElementById('cfgDesc').value,
+      twoFields: document.getElementById('cfgTwoFields').checked,
+      field1Placeholder: document.getElementById('cfgField1Placeholder').value,
+      field1Type: document.getElementById('cfgField1Type').value,
+      field2Placeholder: document.getElementById('cfgField2Placeholder').value,
+      field2Type: document.getElementById('cfgField2Type').value,
+      btnCancelLabel: document.getElementById('cfgBtnCancel').value,
+      btnOkLabel: document.getElementById('cfgBtnOk').value,
+      theme: activeThemeBtn ? activeThemeBtn.dataset.theme : 'auto'
+    };
+  }
+
+  function loadConfig(cfg) {
+    // Set icon
+    currentIcon = cfg.icon;
+    document.querySelectorAll('#iconPicker .icon-option').forEach(function(o) {
+      o.classList.toggle('selected', o.dataset.icon === cfg.icon);
+    });
+
+    // Set style
+    currentStyle = cfg.style;
+    document.querySelectorAll('#stylePicker .style-option').forEach(function(o) {
+      o.classList.toggle('selected', o.dataset.style === cfg.style);
+    });
+
+    // Set text
+    document.getElementById('cfgTitle').value = cfg.title;
+    dialogTitle.textContent = cfg.title || 'Title';
+    document.getElementById('cfgDesc').value = cfg.description;
+    dialogDesc.textContent = cfg.description;
+
+    // Set fields
+    document.getElementById('cfgTwoFields').checked = cfg.twoFields;
+    document.getElementById('field2Row').hidden = !cfg.twoFields;
+    document.getElementById('cfgField1Placeholder').value = cfg.field1Placeholder;
+    document.getElementById('cfgField1Type').value = cfg.field1Type;
+    document.getElementById('cfgField2Placeholder').value = cfg.field2Placeholder;
+    document.getElementById('cfgField2Type').value = cfg.field2Type;
+
+    // Set buttons
+    document.getElementById('cfgBtnCancel').value = cfg.btnCancelLabel;
+    btnCancel.textContent = cfg.btnCancelLabel || 'Cancel';
+    document.getElementById('cfgBtnOk').value = cfg.btnOkLabel;
+    btnOk.textContent = cfg.btnOkLabel || 'OK';
+
+    // Set theme
+    document.querySelectorAll('.theme-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.theme === cfg.theme);
+    });
+    if (cfg.theme === 'auto') {
+      document.documentElement.removeAttribute('data-theme');
+    } else {
+      document.documentElement.setAttribute('data-theme', cfg.theme);
+    }
+
+    updateIcon();
+    updateFields();
+  }
+
+  function buildDialogHtml(cfg) {
+    var iconClass = 'dialog-icon';
+    if (cfg.style === 'warning') iconClass += ' warning';
+    if (cfg.style === 'error') iconClass += ' error';
+
+    var fieldsHtml = '';
+    if (cfg.twoFields) {
+      fieldsHtml += '<input class="dialog-input" type="' + escAttr(cfg.field2Type) + '" placeholder="' + escAttr(cfg.field2Placeholder) + '">';
+    }
+    fieldsHtml += '<input class="dialog-input" type="' + escAttr(cfg.field1Type) + '" placeholder="' + escAttr(cfg.field1Placeholder) + '">';
+
+    return '<div class="dialog" style="position:relative;z-index:2;">' +
+      '<div class="dialog-body">' +
+        '<div class="' + iconClass + '">' +
+          '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' + (iconSvgs[cfg.icon] || iconSvgs.lock) + '</svg>' +
+        '</div>' +
+        '<div class="dialog-title">' + escAttr(cfg.title || 'Title') + '</div>' +
+        '<div class="dialog-desc">' + escAttr(cfg.description) + '</div>' +
+        '<div class="dialog-fields">' + fieldsHtml + '</div>' +
+      '</div>' +
+      '<div class="dialog-buttons">' +
+        '<button class="dialog-btn">' + escAttr(cfg.btnCancelLabel || 'Cancel') + '</button>' +
+        '<div class="dialog-btn-divider"></div>' +
+        '<button class="dialog-btn primary">' + escAttr(cfg.btnOkLabel || 'OK') + '</button>' +
+      '</div>' +
+    '</div>';
+  }
+
+  function renderSavedConfigs() {
+    var list = document.getElementById('savedConfigsList');
+    var empty = document.getElementById('savedConfigsEmpty');
+
+    if (savedConfigs.length === 0) {
+      empty.style.display = '';
+      list.innerHTML = '';
+      return;
+    }
+
+    empty.style.display = 'none';
+    var html = '';
+
+    for (var i = 0; i < savedConfigs.length; i++) {
+      var cfg = savedConfigs[i];
+      var chipClass = 'saved-config-chip';
+      if (cfg.style === 'warning') chipClass += ' warning';
+      if (cfg.style === 'error') chipClass += ' error';
+
+      html += '<div class="saved-config-item" data-index="' + i + '">' +
+        '<div class="' + chipClass + '">' +
+          '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' + (iconSvgs[cfg.icon] || iconSvgs.lock) + '</svg>' +
+        '</div>' +
+        '<div class="saved-config-info" data-action="load" data-index="' + i + '">' +
+          '<div class="saved-config-title">' + escAttr(cfg.title || 'Untitled') + '</div>' +
+          '<div class="saved-config-time">' + escAttr(cfg.timestamp) + '</div>' +
+        '</div>' +
+        '<div class="saved-config-actions">' +
+          '<button class="btn-preview-config" data-action="preview" data-index="' + i + '">Preview</button>' +
+          '<button class="btn-delete-config" data-action="delete" data-index="' + i + '" title="Delete">&times;</button>' +
+        '</div>' +
+      '</div>';
+    }
+
+    list.innerHTML = html;
+  }
+
+  // Save button
+  document.getElementById('btnSaveConfig').addEventListener('click', function() {
+    savedConfigs.push(getCurrentConfig());
+    renderSavedConfigs();
+    showToast('Configuration saved');
+  });
+
+  // Export JSON button
+  document.getElementById('btnExportJson').addEventListener('click', function() {
+    var cfg = getCurrentConfig();
+    delete cfg.id;
+    delete cfg.timestamp;
+    var json = JSON.stringify(cfg, null, 2);
+    try {
+      navigator.clipboard.writeText(json).then(function() {
+        showToast('JSON copied to clipboard');
+      }, function() {
+        showToast('Could not copy to clipboard');
+      });
+    } catch (e) {
+      // Fallback: select from a temporary textarea
+      var ta = document.createElement('textarea');
+      ta.value = json;
+      ta.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('JSON copied to clipboard');
+      } catch (e2) {
+        showToast('Could not copy to clipboard');
+      }
+      document.body.removeChild(ta);
+    }
+  });
+
+  // Saved configs list interactions
+  document.getElementById('savedConfigsList').addEventListener('click', function(e) {
+    var target = e.target.closest('[data-action]');
+    if (!target) return;
+
+    var action = target.dataset.action;
+    var index = parseInt(target.dataset.index, 10);
+    var cfg = savedConfigs[index];
+    if (!cfg) return;
+
+    if (action === 'load') {
+      loadConfig(cfg);
+      showToast('Configuration loaded');
+    } else if (action === 'preview') {
+      showPreviewModal(cfg);
+    } else if (action === 'delete') {
+      savedConfigs.splice(index, 1);
+      renderSavedConfigs();
+      showToast('Configuration deleted');
+    }
+  });
+
+  // Preview modal
+  function showPreviewModal(cfg) {
+    var overlay = document.getElementById('previewModal');
+    var container = document.getElementById('previewDialogContainer');
+    container.innerHTML = buildDialogHtml(cfg);
+    overlay.classList.add('visible');
+  }
+
+  function closePreviewModal() {
+    var overlay = document.getElementById('previewModal');
+    overlay.classList.remove('visible');
+  }
+
+  document.getElementById('previewModalClose').addEventListener('click', closePreviewModal);
+  document.getElementById('previewModalBg').addEventListener('click', closePreviewModal);
+  document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') closePreviewModal();
+  });
+
+  renderSavedConfigs();
+})();
+</script>
