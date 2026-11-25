@@ -119,6 +119,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         win.backgroundColor = .clear
         win.hasShadow = true
         win.level = .floating
+        // NSWindow defaults isReleasedWhenClosed to true. Because we ALSO hold a
+        // strong reference (popupWindow) and later set it to nil, close() would
+        // release the window once and ARC would release it again -> over-release
+        // crash. Let ARC be the sole owner so closing the popup is safe.
+        win.isReleasedWhenClosed = false
+        // isMovableByWindowBackground is inert here: the WKWebView consumes every
+        // mouse event, so AppKit never gets to drag the window. Real dragging is
+        // driven from JS (see the "dragWindow" message handler) via performDrag.
         win.isMovableByWindowBackground = true
         win.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
 
@@ -129,6 +137,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         // The popup web view is where the OK button posts submitPopup from, so the
         // handler must be registered on this content controller too.
         controller.add(self, name: "submitPopup")
+        // The popup's JS posts this on mouse-down over a non-interactive area so we
+        // can drag the borderless window natively.
+        controller.add(self, name: "dragWindow")
 
         let wv = WKWebView(frame: NSRect(x: 0, y: 0, width: popupWidth, height: popupHeight), configuration: cfg)
         wv.navigationDelegate = self
@@ -233,6 +244,12 @@ extension AppDelegate: WKScriptMessageHandler {
         case "submitPopup":
             let json = (message.body as? String) ?? "{}"
             submitPopup(payloadJson: json)
+        case "dragWindow":
+            // Drive the borderless-window drag from the current mouse-down event.
+            if let event = NSApp.currentEvent,
+               event.type == .leftMouseDown || event.type == .leftMouseDragged {
+                popupWindow?.performDrag(with: event)
+            }
         default:
             break
         }
