@@ -103,37 +103,12 @@ body {
 /* ---- Preview area ---- */
 .preview-area {
   position: relative;
-  width: calc(100% + 2 * max(16px, env(safe-area-inset-left, 0px)));
-  margin-left: calc(-1 * max(16px, env(safe-area-inset-left, 0px)));
-  min-height: 440px;
+  width: 100%;
+  min-height: 280px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: center;
-  overflow: hidden;
-}
-
-.preview-bg {
-  position: absolute;
-  inset: 0;
-  background:
-    linear-gradient(135deg, #a8c0ff 0%, #3f2b96 50%, #667eea 100%);
-  background-size: 200% 200%;
-  animation: bgShift 12s ease infinite;
-}
-
-@keyframes bgShift {
-  0%,100% { background-position: 0% 50%; }
-  50% { background-position: 100% 50%; }
-}
-
-.preview-area::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--backdrop-color);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  z-index: 1;
+  padding: 48px 16px 32px;
 }
 
 /* ---- The dialog ---- */
@@ -166,7 +141,7 @@ body {
   align-items: center;
   justify-content: center;
   margin-bottom: 12px;
-  background: linear-gradient(180deg, #58b0f8 0%, #1a8dfc 100%);
+  background: linear-gradient(180deg, #c8c8cc 0%, #9e9ea3 100%);
   box-shadow: var(--icon-shadow);
   color: #fff;
   position: relative;
@@ -174,12 +149,24 @@ body {
   transition: background 0.25s ease;
 }
 
-.dialog-icon.warning {
-  background: linear-gradient(180deg, #ffcb57 0%, var(--warning-tint) 100%);
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .dialog-icon {
+    background: linear-gradient(180deg, #5a5a5e 0%, #3a3a3c 100%);
+  }
 }
 
-.dialog-icon.error {
-  background: linear-gradient(180deg, #ff7272 0%, var(--error-tint) 100%);
+:root[data-theme="dark"] .dialog-icon {
+  background: linear-gradient(180deg, #5a5a5e 0%, #3a3a3c 100%);
+}
+
+.dialog.style-warning {
+  border-color: rgba(255, 159, 10, 0.45);
+  border-width: 1.5px;
+}
+
+.dialog.style-error {
+  border-color: rgba(255, 59, 48, 0.45);
+  border-width: 1.5px;
 }
 
 .dialog-icon svg {
@@ -433,7 +420,8 @@ body {
 .icon-option svg {
   width: 22px;
   height: 22px;
-  fill: var(--panel-text);
+  fill: var(--panel-muted);
+  opacity: 0.7;
 }
 
 .style-picker {
@@ -542,6 +530,44 @@ body {
   .row > .field:last-child {
     margin-bottom: 0;
   }
+}
+
+/* ---- Color inputs ---- */
+.color-row {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.color-field {
+  flex: 1;
+  min-width: 80px;
+}
+
+.color-input {
+  width: 100%;
+  height: 36px;
+  border-radius: 8px;
+  border: 1px solid var(--panel-input-border);
+  background: var(--panel-input-bg);
+  padding: 3px;
+  cursor: pointer;
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.color-input::-webkit-color-swatch-wrapper {
+  padding: 0;
+}
+
+.color-input::-webkit-color-swatch {
+  border: none;
+  border-radius: 5px;
+}
+
+.color-input::-moz-color-swatch {
+  border: none;
+  border-radius: 5px;
 }
 
 /* ---- Action buttons ---- */
@@ -815,7 +841,6 @@ body {
 
 <!-- Preview area -->
 <div class="preview-area">
-  <div class="preview-bg"></div>
   <div class="dialog" id="dialog">
     <div class="dialog-body">
       <div class="dialog-icon" id="dialogIcon">
@@ -898,6 +923,25 @@ body {
     </div>
   </div>
 
+  <!-- Colors -->
+  <div class="section">
+    <div class="section-title">Colors</div>
+    <div class="color-row">
+      <div class="color-field">
+        <label class="field-label" for="cfgTitleColor">Title Text</label>
+        <input type="color" class="color-input" id="cfgTitleColor" value="#1d1d1f">
+      </div>
+      <div class="color-field">
+        <label class="field-label" for="cfgDescColor">Description Text</label>
+        <input type="color" class="color-input" id="cfgDescColor" value="#6e6e73">
+      </div>
+      <div class="color-field">
+        <label class="field-label" for="cfgBtnColor">Button Text</label>
+        <input type="color" class="color-input" id="cfgBtnColor" value="#007aff">
+      </div>
+    </div>
+  </div>
+
   <!-- Input fields -->
   <div class="section">
     <div class="section-title">Input Fields</div>
@@ -967,6 +1011,16 @@ body {
     <div class="saved-configs-empty" id="savedConfigsEmpty">No saved configurations yet.</div>
     <div id="savedConfigsList"></div>
   </div>
+
+  <!-- Download -->
+  <div class="section">
+    <div class="section-title">Download</div>
+    <p style="font-size:13px;color:var(--panel-muted);margin-bottom:12px;">Export a standalone HTML page with just the dialog, ready to use.</p>
+    <div class="action-buttons" style="margin-bottom:0;">
+      <button class="btn-save" id="btnDownloadHtml">Download HTML</button>
+      <button class="btn-export" id="btnCopyHtml">Copy HTML</button>
+    </div>
+  </div>
 </div>
 
 <!-- Preview modal -->
@@ -1015,8 +1069,9 @@ body {
   function updateIcon() {
     iconSvg.innerHTML = iconSvgs[currentIcon] || iconSvgs.lock;
     dialogIcon.className = 'dialog-icon';
-    if (currentStyle === 'warning') dialogIcon.classList.add('warning');
-    if (currentStyle === 'error') dialogIcon.classList.add('error');
+    dialog.classList.remove('style-warning', 'style-error');
+    if (currentStyle === 'warning') dialog.classList.add('style-warning');
+    if (currentStyle === 'error') dialog.classList.add('style-error');
   }
 
   function updateFields() {
@@ -1057,6 +1112,18 @@ body {
   });
   document.getElementById('cfgBtnOk').addEventListener('input', function() {
     btnOk.textContent = this.value || 'OK';
+  });
+
+  // Color customization
+  document.getElementById('cfgTitleColor').addEventListener('input', function() {
+    dialogTitle.style.color = this.value;
+  });
+  document.getElementById('cfgDescColor').addEventListener('input', function() {
+    dialogDesc.style.color = this.value;
+  });
+  document.getElementById('cfgBtnColor').addEventListener('input', function() {
+    btnCancel.style.color = this.value;
+    btnOk.style.color = this.value;
   });
 
   document.getElementById('iconPicker').addEventListener('click', function(e) {
@@ -1135,7 +1202,10 @@ body {
       field2Type: document.getElementById('cfgField2Type').value,
       btnCancelLabel: document.getElementById('cfgBtnCancel').value,
       btnOkLabel: document.getElementById('cfgBtnOk').value,
-      theme: activeThemeBtn ? activeThemeBtn.dataset.theme : 'auto'
+      theme: activeThemeBtn ? activeThemeBtn.dataset.theme : 'auto',
+      titleColor: document.getElementById('cfgTitleColor').value,
+      descColor: document.getElementById('cfgDescColor').value,
+      btnColor: document.getElementById('cfgBtnColor').value
     };
   }
 
@@ -1182,14 +1252,29 @@ body {
       document.documentElement.setAttribute('data-theme', cfg.theme);
     }
 
+    // Set colors
+    if (cfg.titleColor) {
+      document.getElementById('cfgTitleColor').value = cfg.titleColor;
+      dialogTitle.style.color = cfg.titleColor;
+    }
+    if (cfg.descColor) {
+      document.getElementById('cfgDescColor').value = cfg.descColor;
+      dialogDesc.style.color = cfg.descColor;
+    }
+    if (cfg.btnColor) {
+      document.getElementById('cfgBtnColor').value = cfg.btnColor;
+      btnCancel.style.color = cfg.btnColor;
+      btnOk.style.color = cfg.btnColor;
+    }
+
     updateIcon();
     updateFields();
   }
 
   function buildDialogHtml(cfg) {
-    var iconClass = 'dialog-icon';
-    if (cfg.style === 'warning') iconClass += ' warning';
-    if (cfg.style === 'error') iconClass += ' error';
+    var dialogClass = 'dialog';
+    if (cfg.style === 'warning') dialogClass += ' style-warning';
+    if (cfg.style === 'error') dialogClass += ' style-error';
 
     var fieldsHtml = '';
     if (cfg.twoFields) {
@@ -1197,21 +1282,179 @@ body {
     }
     fieldsHtml += '<input class="dialog-input" type="' + escAttr(cfg.field1Type) + '" placeholder="' + escAttr(cfg.field1Placeholder) + '">';
 
-    return '<div class="dialog" style="position:relative;z-index:2;">' +
+    var titleStyle = cfg.titleColor ? ' style="color:' + escAttr(cfg.titleColor) + '"' : '';
+    var descStyle = cfg.descColor ? ' style="color:' + escAttr(cfg.descColor) + '"' : '';
+    var cancelBtnStyle = cfg.btnColor ? ' style="color:' + escAttr(cfg.btnColor) + '"' : '';
+    var okBtnStyle = cfg.btnColor ? ' style="color:' + escAttr(cfg.btnColor) + '"' : '';
+
+    return '<div class="' + dialogClass + '" style="position:relative;z-index:2;">' +
       '<div class="dialog-body">' +
-        '<div class="' + iconClass + '">' +
+        '<div class="dialog-icon">' +
           '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' + (iconSvgs[cfg.icon] || iconSvgs.lock) + '</svg>' +
         '</div>' +
-        '<div class="dialog-title">' + escAttr(cfg.title || 'Title') + '</div>' +
-        '<div class="dialog-desc">' + escAttr(cfg.description) + '</div>' +
+        '<div class="dialog-title"' + titleStyle + '>' + escAttr(cfg.title || 'Title') + '</div>' +
+        '<div class="dialog-desc"' + descStyle + '>' + escAttr(cfg.description) + '</div>' +
         '<div class="dialog-fields">' + fieldsHtml + '</div>' +
       '</div>' +
       '<div class="dialog-buttons">' +
-        '<button class="dialog-btn">' + escAttr(cfg.btnCancelLabel || 'Cancel') + '</button>' +
+        '<button class="dialog-btn"' + cancelBtnStyle + '>' + escAttr(cfg.btnCancelLabel || 'Cancel') + '</button>' +
         '<div class="dialog-btn-divider"></div>' +
-        '<button class="dialog-btn primary">' + escAttr(cfg.btnOkLabel || 'OK') + '</button>' +
+        '<button class="dialog-btn primary"' + okBtnStyle + '>' + escAttr(cfg.btnOkLabel || 'OK') + '</button>' +
       '</div>' +
     '</div>';
+  }
+
+  function generateStandaloneHtml(cfg) {
+    var iconSvgContent = iconSvgs[cfg.icon] || iconSvgs.lock;
+    var dialogAccent = '';
+    if (cfg.style === 'warning') dialogAccent = ' style-warning';
+    if (cfg.style === 'error') dialogAccent = ' style-error';
+
+    var fieldsHtml = '';
+    if (cfg.twoFields) {
+      fieldsHtml += '        <input class="dialog-input" type="' + escAttr(cfg.field2Type) + '" placeholder="' + escAttr(cfg.field2Placeholder) + '">\n';
+    }
+    fieldsHtml += '        <input class="dialog-input" type="' + escAttr(cfg.field1Type) + '" placeholder="' + escAttr(cfg.field1Placeholder) + '">';
+
+    var titleStyle = cfg.titleColor ? ' style="color:' + escAttr(cfg.titleColor) + '"' : '';
+    var descStyle = cfg.descColor ? ' style="color:' + escAttr(cfg.descColor) + '"' : '';
+    var cancelBtnStyle = cfg.btnColor ? ' style="color:' + escAttr(cfg.btnColor) + '"' : '';
+    var okBtnStyle = cfg.btnColor ? ' style="color:' + escAttr(cfg.btnColor) + '"' : '';
+
+    var themeAttr = '';
+    if (cfg.theme === 'dark') themeAttr = ' data-theme="dark"';
+    else if (cfg.theme === 'light') themeAttr = ' data-theme="light"';
+
+    return '<!DOCTYPE html>\n' +
+      '<html lang="en"' + themeAttr + '>\n<head>\n' +
+      '<meta charset="UTF-8">\n' +
+      '<meta name="viewport" content="width=device-width, initial-scale=1.0">\n' +
+      '<title>' + escAttr(cfg.title || 'Dialog') + '</title>\n' +
+      '<style>\n' +
+      ':root {\n' +
+      '  --dialog-bg: rgba(246,246,246,0.92);\n' +
+      '  --dialog-shadow: 0 10px 40px rgba(0,0,0,0.18), 0 2px 12px rgba(0,0,0,0.08);\n' +
+      '  --dialog-border: rgba(0,0,0,0.08);\n' +
+      '  --title-color: #1d1d1f;\n' +
+      '  --desc-color: #6e6e73;\n' +
+      '  --input-bg: rgba(255,255,255,0.85);\n' +
+      '  --input-border: rgba(0,0,0,0.12);\n' +
+      '  --input-text: #1d1d1f;\n' +
+      '  --input-placeholder: #8e8e93;\n' +
+      '  --divider: rgba(0,0,0,0.12);\n' +
+      '  --btn-text: #007aff;\n' +
+      '  --btn-cancel-text: #007aff;\n' +
+      '  --btn-hover: rgba(0,0,0,0.04);\n' +
+      '  --icon-shadow: 0 2px 8px rgba(0,0,0,0.15);\n' +
+      '}\n' +
+      '@media (prefers-color-scheme: dark) {\n' +
+      '  :root:not([data-theme="light"]) {\n' +
+      '    --dialog-bg: rgba(44,44,46,0.92);\n' +
+      '    --dialog-shadow: 0 10px 40px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);\n' +
+      '    --dialog-border: rgba(255,255,255,0.08);\n' +
+      '    --title-color: #f5f5f7; --desc-color: #98989d;\n' +
+      '    --input-bg: rgba(30,30,32,0.8); --input-border: rgba(255,255,255,0.12);\n' +
+      '    --input-text: #f5f5f7; --input-placeholder: #636366;\n' +
+      '    --divider: rgba(255,255,255,0.12);\n' +
+      '    --btn-text: #0a84ff; --btn-cancel-text: #0a84ff;\n' +
+      '    --btn-hover: rgba(255,255,255,0.06);\n' +
+      '    --icon-shadow: 0 2px 8px rgba(0,0,0,0.35);\n' +
+      '    color-scheme: dark;\n' +
+      '  }\n' +
+      '}\n' +
+      ':root[data-theme="dark"] {\n' +
+      '  --dialog-bg: rgba(44,44,46,0.92);\n' +
+      '  --dialog-shadow: 0 10px 40px rgba(0,0,0,0.45), 0 2px 12px rgba(0,0,0,0.25);\n' +
+      '  --dialog-border: rgba(255,255,255,0.08);\n' +
+      '  --title-color: #f5f5f7; --desc-color: #98989d;\n' +
+      '  --input-bg: rgba(30,30,32,0.8); --input-border: rgba(255,255,255,0.12);\n' +
+      '  --input-text: #f5f5f7; --input-placeholder: #636366;\n' +
+      '  --divider: rgba(255,255,255,0.12);\n' +
+      '  --btn-text: #0a84ff; --btn-cancel-text: #0a84ff;\n' +
+      '  --btn-hover: rgba(255,255,255,0.06);\n' +
+      '  --icon-shadow: 0 2px 8px rgba(0,0,0,0.35);\n' +
+      '  color-scheme: dark;\n' +
+      '}\n' +
+      '* { margin: 0; padding: 0; box-sizing: border-box; }\n' +
+      'body {\n' +
+      '  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", system-ui, "Helvetica Neue", sans-serif;\n' +
+      '  display: flex; align-items: center; justify-content: center;\n' +
+      '  min-height: 100vh; -webkit-font-smoothing: antialiased;\n' +
+      '  background: #f5f5f7;\n' +
+      '}\n' +
+      '@media (prefers-color-scheme: dark) {\n' +
+      '  :root:not([data-theme="light"]) body { background: #1c1c1e; }\n' +
+      '}\n' +
+      ':root[data-theme="dark"] body { background: #1c1c1e; }\n' +
+      ':root[data-theme="light"] body { background: #f5f5f7; }\n' +
+      '.dialog {\n' +
+      '  width: 270px; background: var(--dialog-bg);\n' +
+      '  backdrop-filter: blur(72px) saturate(210%); -webkit-backdrop-filter: blur(72px) saturate(210%);\n' +
+      '  border-radius: 14px; box-shadow: var(--dialog-shadow);\n' +
+      '  border: 0.5px solid var(--dialog-border); overflow: hidden;\n' +
+      '}\n' +
+      '.dialog.style-warning { border-color: rgba(255,159,10,0.45); border-width: 1.5px; }\n' +
+      '.dialog.style-error { border-color: rgba(255,59,48,0.45); border-width: 1.5px; }\n' +
+      '.dialog-body {\n' +
+      '  padding: 20px 16px 16px; display: flex; flex-direction: column; align-items: center;\n' +
+      '}\n' +
+      '.dialog-icon {\n' +
+      '  width: 56px; height: 56px; border-radius: 13px;\n' +
+      '  display: flex; align-items: center; justify-content: center;\n' +
+      '  margin-bottom: 12px; background: linear-gradient(180deg, #c8c8cc 0%, #9e9ea3 100%);\n' +
+      '  box-shadow: var(--icon-shadow); color: #fff;\n' +
+      '}\n' +
+      '@media (prefers-color-scheme: dark) {\n' +
+      '  :root:not([data-theme="light"]) .dialog-icon { background: linear-gradient(180deg, #5a5a5e 0%, #3a3a3c 100%); }\n' +
+      '}\n' +
+      ':root[data-theme="dark"] .dialog-icon { background: linear-gradient(180deg, #5a5a5e 0%, #3a3a3c 100%); }\n' +
+      '.dialog-icon svg { width: 30px; height: 30px; fill: #fff; }\n' +
+      '.dialog-title {\n' +
+      '  font-size: 13px; font-weight: 700; color: var(--title-color);\n' +
+      '  text-align: center; margin-bottom: 4px; line-height: 1.3; letter-spacing: -0.01em;\n' +
+      '}\n' +
+      '.dialog-desc {\n' +
+      '  font-size: 12px; color: var(--desc-color); text-align: center;\n' +
+      '  line-height: 1.4; margin-bottom: 14px; max-width: 234px; white-space: pre-wrap;\n' +
+      '}\n' +
+      '.dialog-fields { width: 100%; display: flex; flex-direction: column; gap: 8px; }\n' +
+      '.dialog-input {\n' +
+      '  width: 100%; height: 24px; border-radius: 5px;\n' +
+      '  border: 0.5px solid var(--input-border); background: var(--input-bg);\n' +
+      '  padding: 0 7px; font-size: 12px; font-family: inherit;\n' +
+      '  color: var(--input-text); outline: none;\n' +
+      '}\n' +
+      '.dialog-input::placeholder { color: var(--input-placeholder); }\n' +
+      '.dialog-buttons {\n' +
+      '  display: flex; width: 100%; border-top: 0.5px solid var(--divider);\n' +
+      '}\n' +
+      '.dialog-btn {\n' +
+      '  flex: 1; height: 44px; display: flex; align-items: center; justify-content: center;\n' +
+      '  font-size: 17px; font-family: inherit; letter-spacing: -0.01em;\n' +
+      '  background: none; border: none; cursor: pointer;\n' +
+      '  color: var(--btn-cancel-text); font-weight: 400;\n' +
+      '  transition: background 0.1s ease; -webkit-user-select: none; user-select: none;\n' +
+      '}\n' +
+      '.dialog-btn:hover { background: var(--btn-hover); }\n' +
+      '.dialog-btn.primary { font-weight: 600; color: var(--btn-text); }\n' +
+      '.dialog-btn-divider { width: 0.5px; background: var(--divider); align-self: stretch; }\n' +
+      '</style>\n</head>\n<body>\n' +
+      '<div class="dialog' + dialogAccent + '">\n' +
+      '  <div class="dialog-body">\n' +
+      '    <div class="dialog-icon">\n' +
+      '      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">' + iconSvgContent + '</svg>\n' +
+      '    </div>\n' +
+      '    <div class="dialog-title"' + titleStyle + '>' + escAttr(cfg.title || 'Title') + '</div>\n' +
+      '    <div class="dialog-desc"' + descStyle + '>' + escAttr(cfg.description) + '</div>\n' +
+      '    <div class="dialog-fields">\n' + fieldsHtml + '\n    </div>\n' +
+      '  </div>\n' +
+      '  <div class="dialog-buttons">\n' +
+      '    <button class="dialog-btn"' + cancelBtnStyle + '>' + escAttr(cfg.btnCancelLabel || 'Cancel') + '</button>\n' +
+      '    <div class="dialog-btn-divider"></div>\n' +
+      '    <button class="dialog-btn primary"' + okBtnStyle + '>' + escAttr(cfg.btnOkLabel || 'OK') + '</button>\n' +
+      '  </div>\n' +
+      '</div>\n' +
+      '</body>\n</html>';
   }
 
   function renderSavedConfigs() {
@@ -1326,6 +1569,46 @@ body {
   document.getElementById('previewModalBg').addEventListener('click', closePreviewModal);
   document.addEventListener('keydown', function(e) {
     if (e.key === 'Escape') closePreviewModal();
+  });
+
+  // Download HTML
+  document.getElementById('btnDownloadHtml').addEventListener('click', function() {
+    var cfg = getCurrentConfig();
+    var html = generateStandaloneHtml(cfg);
+    var blob = new Blob([html], { type: 'text/html' });
+    var url = URL.createObjectURL(blob);
+    var w = window.open(url, '_blank');
+    if (w) {
+      showToast('Page opened — press ' + (navigator.platform.indexOf('Mac') > -1 ? '⌘S' : 'Ctrl+S') + ' to save');
+    } else {
+      showToast('Pop-up blocked — please allow pop-ups');
+    }
+  });
+
+  // Copy HTML
+  document.getElementById('btnCopyHtml').addEventListener('click', function() {
+    var cfg = getCurrentConfig();
+    var html = generateStandaloneHtml(cfg);
+    try {
+      navigator.clipboard.writeText(html).then(function() {
+        showToast('HTML copied to clipboard');
+      }, function() {
+        showToast('Could not copy to clipboard');
+      });
+    } catch (e) {
+      var ta = document.createElement('textarea');
+      ta.value = html;
+      ta.style.cssText = 'position:fixed;left:-9999px';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('HTML copied to clipboard');
+      } catch (e2) {
+        showToast('Could not copy to clipboard');
+      }
+      document.body.removeChild(ta);
+    }
   });
 
   renderSavedConfigs();
