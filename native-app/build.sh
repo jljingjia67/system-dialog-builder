@@ -24,7 +24,7 @@ mv system-dialog "${APP_DIR}/Contents/MacOS/system-dialog"
 # "artifact format" (starts with <title>/<style>, no <!DOCTYPE>/<html>/<head>/<body>),
 # so wrap it in a valid standalone HTML skeleton as builder.html.
 {
-  printf '%s' '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"></head><body>'
+  printf '%s' '<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1"><style>html,body{margin:0;padding:0}html{background:var(--panel-bg)}</style></head><body>'
   cat ../prompt-ui.html
   printf '%s' '</body></html>'
 } > "${APP_DIR}/Contents/Resources/builder.html"
@@ -53,8 +53,6 @@ cat > "${APP_DIR}/Contents/Info.plist" << 'PLIST'
     <key>LSMinimumSystemVersion</key>
     <string>12.0</string>
     <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>LSUIElement</key>
     <true/>
 </dict>
 </plist>

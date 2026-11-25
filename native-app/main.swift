@@ -1,6 +1,14 @@
 import Cocoa
 import WebKit
 
+// Borderless windows return false from canBecomeKey/canBecomeMain by default, so
+// their text fields never receive keystrokes. This subclass forces them to true so
+// the popup's web view can accept keyboard input.
+class KeyableWindow: NSWindow {
+    override var canBecomeKey: Bool { return true }
+    override var canBecomeMain: Bool { return true }
+}
+
 class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     var webView: WKWebView!
@@ -23,6 +31,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         )
         window.title = "System Dialog Builder"
         window.minSize = NSSize(width: 720, height: 600)
+        // Belt-and-suspenders: paint the window white so no default gray
+        // windowBackgroundColor flashes around the content.
+        window.backgroundColor = .white
         window.center()
 
         let config = WKWebViewConfiguration()
@@ -57,6 +68,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         }
 
         window.makeKeyAndOrderFront(nil)
+        window.makeFirstResponder(webView)
         NSApp.activate(ignoringOtherApps: true)
     }
 
@@ -89,6 +101,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             renderPopup(into: wv)
             existing.center()
             existing.makeKeyAndOrderFront(nil)
+            existing.makeFirstResponder(wv)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
@@ -96,7 +109,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let popupWidth: CGFloat = 320
         let popupHeight: CGFloat = 260
 
-        let win = NSWindow(
+        let win = KeyableWindow(
             contentRect: NSRect(x: 0, y: 0, width: popupWidth, height: popupHeight),
             styleMask: [.borderless],
             backing: .buffered,
@@ -131,6 +144,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         win.center()
         win.makeKeyAndOrderFront(nil)
+        win.makeFirstResponder(wv)
         NSApp.activate(ignoringOtherApps: true)
 
         popupWindow = win
