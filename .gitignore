@@ -1,0 +1,3 @@
+native-app/System Dialog.app/
+*.o
+.DS_Store

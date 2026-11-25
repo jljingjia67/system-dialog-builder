@@ -756,6 +756,84 @@ body {
   color: #ff3b30;
 }
 
+/* ---- Submitted entries ---- */
+.btn-clear-submissions {
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 500;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: 0;
+  border: 1px solid var(--panel-input-border);
+  border-radius: 6px;
+  background: var(--panel-input-bg);
+  color: var(--btn-text);
+  cursor: pointer;
+  transition: background 0.1s ease;
+}
+
+.btn-clear-submissions:hover {
+  background: rgba(0,122,255,0.08);
+}
+
+.submissions-empty {
+  font-size: 13px;
+  color: var(--panel-muted);
+  font-style: italic;
+}
+
+.submission-entry {
+  border: 1px solid var(--panel-border);
+  border-radius: 10px;
+  overflow: hidden;
+  margin-bottom: 10px;
+  background: var(--panel-input-bg);
+}
+
+.submission-entry:last-child {
+  margin-bottom: 0;
+}
+
+.submission-entry-time {
+  padding: 8px 12px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--panel-muted);
+  border-bottom: 0.5px solid var(--panel-border);
+}
+
+.submission-row {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 9px 12px;
+  border-top: 0.5px solid var(--panel-border);
+}
+
+.submission-row:first-child {
+  border-top: none;
+}
+
+.submission-row-key {
+  font-size: 13px;
+  color: var(--panel-muted);
+  flex-shrink: 0;
+  min-width: 90px;
+}
+
+.submission-row-value {
+  font-size: 13px;
+  color: var(--panel-text);
+  word-break: break-word;
+  flex: 1;
+  text-align: right;
+}
+
+.submission-row-value.empty {
+  color: var(--panel-muted);
+  font-style: italic;
+}
+
 /* ---- Preview modal ---- */
 .preview-modal-overlay {
   position: fixed;
@@ -1015,6 +1093,17 @@ body {
     <div class="saved-configs-header">Saved Configurations</div>
     <div class="saved-configs-empty" id="savedConfigsEmpty">No saved configurations yet.</div>
     <div id="savedConfigsList"></div>
+  </div>
+
+  <!-- Submitted entries -->
+  <div class="section">
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between;">
+      <span>Submitted Entries</span>
+      <button class="btn-clear-submissions" id="btnClearSubmissions" type="button">Clear</button>
+    </div>
+    <p style="font-size:13px;color:var(--panel-muted);margin-bottom:12px;">What you typed into the popup dialog and submitted with OK shows up here so you can verify it.</p>
+    <div class="submissions-empty" id="submissionsEmpty">No submissions yet.</div>
+    <div id="submissionsList"></div>
   </div>
 
   <!-- Download -->
@@ -1563,6 +1652,31 @@ body {
     var container = document.getElementById('previewDialogContainer');
     container.innerHTML = buildDialogHtml(cfg);
     overlay.classList.add('visible');
+
+    // Wire the in-page dialog's buttons so the website demonstrates the same
+    // "save what was entered" behavior as the native app. The primary (OK)
+    // button is the last .dialog-btn; Cancel is the first.
+    try {
+      var btns = container.querySelectorAll('.dialog-btn');
+      var okBtn = container.querySelector('.dialog-btn.primary');
+      var cancelBtn = btns.length ? btns[0] : null;
+      if (okBtn) {
+        okBtn.addEventListener('click', function() {
+          var values = {};
+          var inputs = container.querySelectorAll('.dialog-input');
+          for (var i = 0; i < inputs.length; i++) {
+            var input = inputs[i];
+            var key = input.getAttribute('placeholder') || ('Field ' + (i + 1));
+            values[key] = input.value;
+          }
+          saveSubmission({ values: values, ts: Date.now() });
+          closePreviewModal();
+        });
+      }
+      if (cancelBtn && !cancelBtn.classList.contains('primary')) {
+        cancelBtn.addEventListener('click', closePreviewModal);
+      }
+    } catch (e) {}
   }
 
   function closePreviewModal() {
@@ -1642,6 +1756,91 @@ body {
     });
   }
 
+  // ---- Submitted entries (what the user typed into the popup dialog) ----
+  var submittedEntries = [];
+
+  function formatSubmissionTime(ts) {
+    try {
+      var d = new Date(ts);
+      if (isNaN(d.getTime())) return String(ts);
+      return d.toLocaleString();
+    } catch (e) {
+      return String(ts);
+    }
+  }
+
+  function renderSubmittedEntries() {
+    var list = document.getElementById('submissionsList');
+    var empty = document.getElementById('submissionsEmpty');
+    if (!list || !empty) return;
+
+    if (submittedEntries.length === 0) {
+      empty.style.display = '';
+      list.innerHTML = '';
+      return;
+    }
+    empty.style.display = 'none';
+
+    var html = '';
+    for (var i = 0; i < submittedEntries.length; i++) {
+      var entry = submittedEntries[i];
+      var values = entry.values || {};
+      var rows = '';
+      var keys = Object.keys(values);
+      if (keys.length === 0) {
+        rows = '<div class="submission-row"><span class="submission-row-value empty">(no fields)</span></div>';
+      } else {
+        for (var k = 0; k < keys.length; k++) {
+          var key = keys[k];
+          var val = values[key];
+          var valStr = (val == null || String(val) === '') ? '(empty)' : String(val);
+          var valClass = (val == null || String(val) === '') ? 'submission-row-value empty' : 'submission-row-value';
+          rows += '<div class="submission-row">' +
+            '<span class="submission-row-key">' + escAttr(String(key)) + '</span>' +
+            '<span class="' + valClass + '">' + escAttr(valStr) + '</span>' +
+          '</div>';
+        }
+      }
+      html += '<div class="submission-entry">' +
+        '<div class="submission-entry-time">' + escAttr(formatSubmissionTime(entry.ts)) + '</div>' +
+        rows +
+      '</div>';
+    }
+    list.innerHTML = html;
+  }
+
+  // Save a submission payload { values, ts }, newest first.
+  function saveSubmission(payload) {
+    if (!payload || typeof payload !== 'object') return;
+    submittedEntries.unshift({
+      values: (payload.values && typeof payload.values === 'object') ? payload.values : {},
+      ts: payload.ts || Date.now()
+    });
+    renderSubmittedEntries();
+    try { showToast('Entry saved'); } catch (e) {}
+  }
+
+  // Called by the native app after the popup's OK is pressed. Accepts the JSON
+  // string posted from the popup web view.
+  window.receiveSubmission = function(jsonString) {
+    var payload;
+    try {
+      payload = (typeof jsonString === 'string') ? JSON.parse(jsonString) : (jsonString || {});
+    } catch (e) {
+      payload = null;
+    }
+    if (payload) saveSubmission(payload);
+  };
+
+  var btnClearSubmissions = document.getElementById('btnClearSubmissions');
+  if (btnClearSubmissions) {
+    btnClearSubmissions.addEventListener('click', function() {
+      submittedEntries = [];
+      renderSubmittedEntries();
+    });
+  }
+
+  renderSubmittedEntries();
   renderSavedConfigs();
 })();
 </script>

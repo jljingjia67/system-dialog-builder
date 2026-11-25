@@ -236,6 +236,30 @@ body {
     } catch (e) {}
   }
 
+  // OK: collect every input's value keyed by its placeholder/label, send to the
+  // app, then let the app close the popup.
+  function submitPopup() {
+    var values = {};
+    try {
+      var inputs = document.querySelectorAll('.dialog-input');
+      for (var i = 0; i < inputs.length; i++) {
+        var input = inputs[i];
+        var key = input.getAttribute('placeholder') || input.getAttribute('aria-label') || ('Field ' + (i + 1));
+        values[key] = input.value;
+      }
+    } catch (e) {
+      values = {};
+    }
+    try {
+      if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.submitPopup) {
+        window.webkit.messageHandlers.submitPopup.postMessage(JSON.stringify({ values: values, ts: Date.now() }));
+        return;
+      }
+    } catch (e) {}
+    // No app bridge available: just close.
+    closePopup();
+  }
+
   window.renderDialog = function(cfgJsonString) {
     var cfg;
     try {
@@ -284,12 +308,14 @@ body {
     var cancel = document.getElementById('popupCancel');
     var ok = document.getElementById('popupOk');
     if (cancel) cancel.addEventListener('click', closePopup);
-    if (ok) ok.addEventListener('click', closePopup);
+    if (ok) ok.addEventListener('click', submitPopup);
   };
 
   document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape' || e.key === 'Enter') {
+    if (e.key === 'Escape') {
       closePopup();
+    } else if (e.key === 'Enter') {
+      submitPopup();
     }
   });
 })();

@@ -1,6 +1,13 @@
 # System Dialog Builder
 
-A customizable Apple-style system dialog, available three ways: a web builder, a native macOS app, and an Electron app.
+A customizable Apple-style system dialog, available two ways: a web builder and a native macOS app.
+
+## Features
+
+- **Customization builder** — design the dialog's icon, alert style (standard / warning / error), title, description, text colors, 1–2 input fields, and button labels, with a light/dark theme toggle and a live preview that updates as you edit.
+- **Show as Popup** — opens the configured dialog in its own borderless, transparent, always-on-top window: no title bar, no app name, floating independently of the builder. It reflects the current config (icon, style, title, description, fields, colors, theme). Cancel, OK, and Escape close only the popup; the builder stays open so you can tweak and re-pop. In a plain browser (the website) this falls back to an in-page preview.
+- **Save what was entered** — when you type into the popup's input fields and click **OK**, the values you entered are saved into the builder's **Submitted Entries** list (field name → value, with a timestamp) so you can verify exactly what was typed. The website's in-page preview demonstrates the same thing.
+- **Export** — save or copy a standalone HTML page of just the dialog, or copy the config as JSON.
 
 ## Run the Mac app with no approval prompt (recommended)
 
@@ -39,5 +46,5 @@ Open **https://jljingjia67.github.io/system-dialog-builder/** to customize the d
 ## Repo contents
 
 - `index.html` / `prompt-ui.html` — the web builder (served by GitHub Pages)
-- `native-app/` — Swift + WebKit source for the native Mac app (`main.swift`, `build.sh`)
-- `electron-app/` — Electron version (needs Node.js)
+- `native-app/` — Swift + WebKit source for the native Mac app (`main.swift`, `build.sh`, `popup.html`)
+- `update.sh` — pulls the latest code and rebuilds the Mac app

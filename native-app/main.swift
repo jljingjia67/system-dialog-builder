@@ -32,6 +32,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         let contentController = config.userContentController
         contentController.add(self, name: "showPopup")
         contentController.add(self, name: "closePopup")
+        contentController.add(self, name: "submitPopup")
 
         webView = WKWebView(frame: NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight), configuration: config)
 
@@ -112,6 +113,9 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         cfg.preferences.setValue(true, forKey: "developerExtrasEnabled")
         let controller = cfg.userContentController
         controller.add(self, name: "closePopup")
+        // The popup web view is where the OK button posts submitPopup from, so the
+        // handler must be registered on this content controller too.
+        controller.add(self, name: "submitPopup")
 
         let wv = WKWebView(frame: NSRect(x: 0, y: 0, width: popupWidth, height: popupHeight), configuration: cfg)
         wv.navigationDelegate = self
@@ -145,6 +149,17 @@ class AppDelegate: NSObject, NSApplicationDelegate {
             _ = data
             wv.evaluateJavaScript("window.renderDialog('{}');", completionHandler: nil)
         }
+    }
+
+    // Forward the submitted values payload to the builder page, then close the popup.
+    func submitPopup(payloadJson: String) {
+        // Embed payloadJson (already a JSON string) as a safely escaped JS string literal.
+        if let encoded = try? JSONSerialization.data(withJSONObject: [payloadJson], options: []),
+           let arr = String(data: encoded, encoding: .utf8) {
+            let literal = String(arr.dropFirst().dropLast())
+            webView.evaluateJavaScript("if (window.receiveSubmission) { window.receiveSubmission(\(literal)); }", completionHandler: nil)
+        }
+        closePopup()
     }
 
     func closePopup() {
@@ -194,6 +209,9 @@ extension AppDelegate: WKScriptMessageHandler {
             showPopup(configJson: json)
         case "closePopup":
             closePopup()
+        case "submitPopup":
+            let json = (message.body as? String) ?? "{}"
+            submitPopup(payloadJson: json)
         default:
             break
         }
