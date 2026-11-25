@@ -16,7 +16,17 @@ cd system-dialog-builder/native-app
 
 `build.sh` compiles the app and launches it immediately — no approval prompt. The built `System Dialog.app` sits in the `native-app` folder; drag it to your Applications folder to keep it.
 
-The app floats over your desktop as a frameless, transparent, always-on-top dialog. Drag it by the top area; press Cancel, OK, Enter, or Escape to close.
+The app opens as a window with the full builder UI — the same one as the website — where you customize the dialog's icon, title, text, colors, input fields, buttons, and theme, with a live preview.
+
+## Update to the latest version
+
+If you installed by building from source (above), update anytime from the repo folder:
+
+```bash
+./update.sh
+```
+
+It pulls the newest code and rebuilds the app, then relaunches it.
 
 ## Download the pre-built app (shows a one-time prompt)
 
