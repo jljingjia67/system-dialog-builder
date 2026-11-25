@@ -132,7 +132,14 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let wv = WKWebView(frame: NSRect(x: 0, y: 0, width: popupWidth, height: popupHeight), configuration: cfg)
         wv.navigationDelegate = self
-        wv.setValue(false, forKey: "drawsBackground") // transparent web view background
+        // Transparent web view background. The private KVC can silently fail, so we
+        // ALSO use the public API and clear the backing layer.
+        wv.setValue(false, forKey: "drawsBackground") // fallback
+        if #available(macOS 12.0, *) {
+            wv.underPageBackgroundColor = NSColor.clear
+        }
+        wv.wantsLayer = true
+        wv.layer?.backgroundColor = NSColor.clear.cgColor
 
         win.contentView = wv
 
