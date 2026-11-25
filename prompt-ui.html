@@ -858,6 +858,11 @@ body {
   </div>
 </div>
 
+<!-- Show as popup button -->
+<div style="display:flex;justify-content:center;padding:0 16px 8px;">
+  <button class="btn-export" id="btnShowPopup" style="color:var(--btn-text);">Show as Popup</button>
+</div>
+
 <!-- Customization panel -->
 <div class="panel">
   <div class="panel-header">
@@ -1610,6 +1615,32 @@ body {
       document.body.removeChild(ta);
     }
   });
+
+  // Show as Popup: use native bridge if present, else fall back to in-page modal
+  var btnShowPopup = document.getElementById('btnShowPopup');
+  if (btnShowPopup) {
+    btnShowPopup.addEventListener('click', function() {
+      var cfg = getCurrentConfig();
+      var bridge = null;
+      try {
+        if (window.webkit && window.webkit.messageHandlers && window.webkit.messageHandlers.showPopup) {
+          bridge = window.webkit.messageHandlers.showPopup;
+        }
+      } catch (e) {
+        bridge = null;
+      }
+      if (bridge) {
+        try {
+          bridge.postMessage(JSON.stringify(cfg));
+          return;
+        } catch (e) {
+          // fall through to in-page modal
+        }
+      }
+      // Plain browser / website fallback
+      showPreviewModal(cfg);
+    });
+  }
 
   renderSavedConfigs();
 })();

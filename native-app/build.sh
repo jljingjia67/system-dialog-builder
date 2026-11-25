@@ -29,6 +29,10 @@ mv system-dialog "${APP_DIR}/Contents/MacOS/system-dialog"
   printf '%s' '</body></html>'
 } > "${APP_DIR}/Contents/Resources/builder.html"
 
+# Bundle the standalone popup dialog template. It is already a complete HTML
+# document, so copy it as-is (no skeleton wrapping needed).
+cp popup.html "${APP_DIR}/Contents/Resources/popup.html"
+
 cat > "${APP_DIR}/Contents/Info.plist" << 'PLIST'
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">

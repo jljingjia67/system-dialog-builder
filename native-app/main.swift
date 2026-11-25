@@ -5,6 +5,12 @@ class AppDelegate: NSObject, NSApplicationDelegate {
     var window: NSWindow!
     var webView: WKWebView!
 
+    // Independent borderless popup window + its web view (kept as references so
+    // they are not deallocated while shown).
+    var popupWindow: NSWindow?
+    var popupWebView: WKWebView?
+    var pendingPopupConfigJson: String = "{}"
+
     func applicationDidFinishLaunching(_ notification: Notification) {
         let windowWidth: CGFloat = 1000
         let windowHeight: CGFloat = 800
@@ -21,6 +27,11 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
         let config = WKWebViewConfiguration()
         config.preferences.setValue(true, forKey: "developerExtrasEnabled")
+
+        // Register native bridge: builder page -> Swift.
+        let contentController = config.userContentController
+        contentController.add(self, name: "showPopup")
+        contentController.add(self, name: "closePopup")
 
         webView = WKWebView(frame: NSRect(x: 0, y: 0, width: windowWidth, height: windowHeight), configuration: config)
 
@@ -52,6 +63,99 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         NSApp.terminate(nil)
     }
 
+    // MARK: - Popup window
+
+    func popupHtmlPath() -> String {
+        if let bundled = Bundle.main.path(forResource: "popup", ofType: "html") {
+            return bundled
+        }
+        let exeDir = CommandLine.arguments.count > 0
+            ? URL(fileURLWithPath: CommandLine.arguments[0]).deletingLastPathComponent()
+            : URL(fileURLWithPath: FileManager.default.currentDirectoryPath)
+        let sibling = exeDir.appendingPathComponent("popup.html").path
+        if FileManager.default.fileExists(atPath: sibling) {
+            return sibling
+        }
+        let fallbackDir = ProcessInfo.processInfo.environment["APP_DIR"] ?? FileManager.default.currentDirectoryPath
+        return URL(fileURLWithPath: fallbackDir).appendingPathComponent("popup.html").path
+    }
+
+    func showPopup(configJson: String) {
+        pendingPopupConfigJson = configJson
+
+        // Reuse an existing popup window if present.
+        if let existing = popupWindow, let wv = popupWebView {
+            renderPopup(into: wv)
+            existing.center()
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+
+        let popupWidth: CGFloat = 320
+        let popupHeight: CGFloat = 260
+
+        let win = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: popupWidth, height: popupHeight),
+            styleMask: [.borderless],
+            backing: .buffered,
+            defer: false
+        )
+        win.isOpaque = false
+        win.backgroundColor = .clear
+        win.hasShadow = true
+        win.level = .floating
+        win.isMovableByWindowBackground = true
+        win.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
+
+        let cfg = WKWebViewConfiguration()
+        cfg.preferences.setValue(true, forKey: "developerExtrasEnabled")
+        let controller = cfg.userContentController
+        controller.add(self, name: "closePopup")
+
+        let wv = WKWebView(frame: NSRect(x: 0, y: 0, width: popupWidth, height: popupHeight), configuration: cfg)
+        wv.navigationDelegate = self
+        wv.setValue(false, forKey: "drawsBackground") // transparent web view background
+
+        win.contentView = wv
+
+        let path = popupHtmlPath()
+        if FileManager.default.fileExists(atPath: path) {
+            let url = URL(fileURLWithPath: path)
+            wv.loadFileURL(url, allowingReadAccessTo: url.deletingLastPathComponent())
+        }
+
+        win.center()
+        win.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        popupWindow = win
+        popupWebView = wv
+    }
+
+    func renderPopup(into wv: WKWebView) {
+        // pendingPopupConfigJson is a JSON string; embed it as a JS string literal.
+        let data = pendingPopupConfigJson.data(using: .utf8) ?? Data("{}".utf8)
+        if let encoded = try? JSONSerialization.data(withJSONObject: [pendingPopupConfigJson], options: []),
+           let arr = String(data: encoded, encoding: .utf8) {
+            // arr looks like ["...escaped json..."]; strip the brackets to get a JS string literal.
+            let literal = String(arr.dropFirst().dropLast())
+            wv.evaluateJavaScript("window.renderDialog(\(literal));", completionHandler: nil)
+        } else {
+            _ = data
+            wv.evaluateJavaScript("window.renderDialog('{}');", completionHandler: nil)
+        }
+    }
+
+    func closePopup() {
+        if let win = popupWindow {
+            win.orderOut(nil)
+            win.close()
+        }
+        popupWindow = nil
+        popupWebView = nil
+    }
+
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
@@ -76,7 +180,32 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 extension AppDelegate: NSWindowDelegate {
     func windowWillClose(_ notification: Notification) {
+        // Only the builder window has this delegate, so closing it quits the app.
         NSApp.terminate(nil)
+    }
+}
+
+extension AppDelegate: WKScriptMessageHandler {
+    func userContentController(_ userContentController: WKUserContentController,
+                              didReceive message: WKScriptMessage) {
+        switch message.name {
+        case "showPopup":
+            let json = (message.body as? String) ?? "{}"
+            showPopup(configJson: json)
+        case "closePopup":
+            closePopup()
+        default:
+            break
+        }
+    }
+}
+
+extension AppDelegate: WKNavigationDelegate {
+    func webView(_ webView: WKWebView, didFinish navigation: WKNavigation!) {
+        // Inject the current config into the popup once its page is ready.
+        if webView == popupWebView {
+            renderPopup(into: webView)
+        }
     }
 }
 
